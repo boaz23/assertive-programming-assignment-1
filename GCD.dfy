@@ -65,6 +65,16 @@ lemma Remainder_Specific(a: nat, b: nat)
 {
 }
 
+lemma {:axiom} MultiplyThenDivideIsId()
+	ensures forall a, b : nat :: b != 0 ==> (b * a) / b == a
+
+lemma ModMultipleIsZero(c: nat)
+	requires c != 0
+	ensures forall a: nat :: (c * a) % c == 0
+{
+	MultiplyThenDivideIsId();
+}
+
 function RemiandersN(a: nat, b: nat): nat
 	requires a > 0
 	decreases b
