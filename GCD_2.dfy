@@ -66,23 +66,17 @@ lemma {:verify true} MultiplyThenDivideIsId()
 	}
 }
 
-function Remainder_Definition(a: nat, b: nat): (nat, nat)
+function RemainderDefinitionNumbers(a: nat, b: nat): (nat, nat)
 	requires b != 0
 {
 	(a / b, a % b)
 }
 
-predicate Remainder_EqualsFirst(a: nat, b: nat)
+predicate RemainderDefinition(a: nat, b: nat)
 	requires b != 0
 {
-	var (q, r) := Remainder_Definition(a, b);
+	var (q, r) := RemainderDefinitionNumbers(a, b);
 	a == (q * b) + r
-}
-
-lemma Remainder_Specific(a: nat, b: nat)
-	requires b != 0
-	ensures Remainder_EqualsFirst(a, b)
-{
 }
 
 lemma ModMultipleIsZero(c: nat)
@@ -99,11 +93,11 @@ lemma {:verify true} CommonDivisorPersists_AfterMod(a: nat, b: nat, c: nat)
 {
 	calc {
 		(a % b) % c;
-		== { Remainder_Specific(a, b); }
+		== { assert RemainderDefinition(a, b); }
 		(a - ((a / b) * b)) % c;
 		== {
-			Remainder_Specific(a, c);
-			Remainder_Specific(b, c);
+			assert RemainderDefinition(a, c);
+			assert RemainderDefinition(b, c);
 		}
 		(
 			((a/c)*c + (a%c)) - // == a
@@ -127,11 +121,11 @@ lemma {:verify true} CommonDivisorPersists_BeforeMod(a: nat, b: nat, c: nat)
 {
 	calc {
 		a % c;
-		==  { Remainder_Specific(a, b); }
+		==  { assert RemainderDefinition(a, b); }
 		(((a / b) * b) + (a % b)) % c;
 		== {
-			Remainder_Specific(b, c);
-			Remainder_Specific(a % b, c);
+			assert RemainderDefinition(b, c);
+			assert RemainderDefinition(a % b, c);
 		}
 		(
 			(a/b) * (
@@ -185,7 +179,7 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 		// For the lemma's precondition.
 		// This is necessary for dafny to recognize this.
 		// Do not remove.
-		assert b1 > 0; 
+		assert b1 > 0;
 		GcdInvariantStepProof(a1, b1);
 		b1, a1 := a1 % b1, b1;
 	}
