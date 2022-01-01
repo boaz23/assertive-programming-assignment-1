@@ -65,6 +65,7 @@ lemma Remainder_Specific(a: nat, b: nat)
 {
 }
 
+// :verify false
 lemma {:axiom} MultiplyThenDivideIsId()
 	ensures forall a, b : nat :: b != 0 ==> (b * a) / b == a
 
@@ -79,6 +80,7 @@ function N(a: nat, b: nat): int
 	requires a > 0
 	decreases b
 	ensures N(a, b) >= -1
+	ensures N(a, b) == -1 <==> b == 0
 {
 	if b == 0 then -1
 	else 1 + N(b, a % b)
@@ -93,12 +95,6 @@ function R_k(a: nat, b: nat, k: int): nat
 	else if k == -1 then b
 	else if b == 0 then a
 	else R_k(b, a % b, k - 1)
-}
-
-lemma {:verify false} N_NonNegative(a: nat, b: nat)
-	requires a > 0
-	ensures N(a, b) == 1 <==> b == 0
-{
 }
 
 // lemma {:verify false} Rk_WhenZeroSpecification(a: nat, b: nat)
@@ -139,7 +135,6 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 	var r_k_m2 := a;
 	var r_k_m1 := b;
 
-	N_NonNegative(a, b);
 	while (r_k_m1 != 0)
 		invariant k <= N + 1
 		invariant r_k_m2 == R_k(a, b, k - 2)
