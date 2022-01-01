@@ -86,60 +86,62 @@ lemma ModMultipleIsZero(c: nat)
 	MultiplyThenDivideIsId();
 }
 
-lemma {:verify true} CommonDivisorPersists_AfterMod(a: nat, b: nat, c: nat)
+lemma {:verify true} CommonDivisorPersists_AfterMod(a: nat, b: nat)
 	requires b > 0
-	requires CommonDivisor(a, b, c)
-	ensures CommonDivisor(b, a % b, c)
+	ensures forall c: nat :: CommonDivisor(a, b, c) ==> CommonDivisor(b, a % b, c)
 {
-	calc {
-		(a % b) % c;
-		== { assert RemainderDefinition(a, b); }
-		(a - ((a / b) * b)) % c;
-		== {
-			assert RemainderDefinition(a, c);
-			assert RemainderDefinition(b, c);
+	forall c: nat | CommonDivisor(a, b, c) {
+		calc {
+			(a % b) % c;
+			== { assert RemainderDefinition(a, b); }
+			(a - ((a / b) * b)) % c;
+			== {
+				assert RemainderDefinition(a, c);
+				assert RemainderDefinition(b, c);
+			}
+			(
+				((a/c)*c + (a%c)) - // == a
+				(a/b) * (
+					(b/c)*c + (b%c) // == b
+				)
+			) % c;
+			== { assert CommonDivisor(a, b, c); }
+			((a/c)*c - (a/b)*(b/c)*c) % c;
+			== // Multiplication distributaion
+			(c * ((a / c) - (a / b) * (b / c))) % c;
+			== { ModMultipleIsZero(c); }
+			0;
 		}
-		(
-			((a/c)*c + (a%c)) - // == a
-			(a/b) * (
-				(b/c)*c + (b%c) // == b
-			)
-		) % c;
-		== { assert CommonDivisor(a, b, c); }
-		((a/c)*c - (a/b)*(b/c)*c) % c;
-		== // Multiplication distributaion
-		(c * ((a / c) - (a / b) * (b / c))) % c;
-		== { ModMultipleIsZero(c); }
-		0;
 	}
 }
 
-lemma {:verify true} CommonDivisorPersists_BeforeMod(a: nat, b: nat, c: nat)
+lemma {:verify true} CommonDivisorPersists_BeforeMod(a: nat, b: nat)
 	requires b > 0
-	requires CommonDivisor(b, a % b, c)
-	ensures CommonDivisor(a, b, c)
+	ensures forall c:nat :: CommonDivisor(b, a % b, c) ==> CommonDivisor(a, b, c)
 {
-	calc {
-		a % c;
-		==  { assert RemainderDefinition(a, b); }
-		(((a / b) * b) + (a % b)) % c;
-		== {
-			assert RemainderDefinition(b, c);
-			assert RemainderDefinition(a % b, c);
+	forall c: nat | CommonDivisor(b, a % b, c) {
+		calc {
+			a % c;
+			==  { assert RemainderDefinition(a, b); }
+			(((a / b) * b) + (a % b)) % c;
+			== {
+				assert RemainderDefinition(b, c);
+				assert RemainderDefinition(a % b, c);
+			}
+			(
+				(a/b) * (
+					(b/c)*c + (b%c) // == b
+				) + (
+					((a%b)/c)*c + ((a%b)%c) // == (a % b)
+				)
+			) % c;
+			== { assert CommonDivisor(b, a % b, c); }
+			((a/b)*(b/c)*c + ((a%b)/c)*c) % c;
+			== // Multiplication distributaion
+			(c * ((a/b)*(b/c) + (a%b)/c)) % c;
+			== { ModMultipleIsZero(c); }
+			0;
 		}
-		(
-			(a/b) * (
-				(b/c)*c + (b%c) // == b
-			) + (
-				((a%b)/c)*c + ((a%b)%c) // == (a % b)
-			)
-		) % c;
-		== { assert CommonDivisor(b, a % b, c); }
-		((a/b)*(b/c)*c + ((a%b)/c)*c) % c;
-		== // Multiplication distributaion
-		(c * ((a/b)*(b/c) + (a%b)/c)) % c;
-		== { ModMultipleIsZero(c); }
-		0;
 	}
 }
 
@@ -147,15 +149,8 @@ lemma {:verify true} CommonDivisorPersists(a: nat, b: nat)
 	requires b > 0
 	ensures forall c: nat :: CommonDivisor(a, b, c) <==> CommonDivisor(b, a % b, c)
 {
-	forall c: nat | true ensures CommonDivisor(a, b, c) <==> CommonDivisor(b, a % b, c)
-	{
-		if (CommonDivisor(a, b, c)) {
-			CommonDivisorPersists_AfterMod(a, b, c);
-		}
-		if (CommonDivisor(b, a % b, c)) {
-			CommonDivisorPersists_BeforeMod(a, b, c);
-		}
-	}
+	CommonDivisorPersists_AfterMod(a, b);
+	CommonDivisorPersists_BeforeMod(a, b);
 }
 
 lemma {:verify true} GcdInvariantStepProof(a: nat, b: nat)
