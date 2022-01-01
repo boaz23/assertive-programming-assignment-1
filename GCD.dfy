@@ -95,31 +95,23 @@ function R_k(a: nat, b: nat, k: int): nat
 	else R_k(b, a % b, k - 1)
 }
 
-lemma {:verify false} RemainderK_WhenZeroSpecification(a: nat, b: nat)
-	requires a > 0 && b > 0
-	ensures R_k(a, b, N(a, b)) == 0
-	ensures forall k : nat :: k < N(a, b) ==> R_k(a, b, k) > 0
+lemma {:verify false} RemaindersN_NonNegative(a: nat, b: nat)
+	requires a > 0
+	ensures N(a, b) == 1 <==> b == 0
 {
 }
 
-// lemma {:verify false} RemainderK_WhenZeroIff(a: nat, b: nat)
+// lemma {:verify false} RemainderK_WhenZeroSpecification(a: nat, b: nat)
 // 	requires a > 0 && b > 0
-// 	ensures forall k : nat :: k == N(a, b) <==> R_k(a, b, k) == 0
-// 	// ensures k == N(a, b) + 1 <==> R_k(a, b, k - 1) == 0
+// 	ensures R_k(a, b, N(a, b)) == 0
+// 	ensures forall k : nat :: k < N(a, b) ==> R_k(a, b, k) > 0
 // {
 // }
 
-lemma {:verify false} RemaindersN_NonNegative(a: nat, b: nat)
+lemma {:verify false} RemainderK_WhenZeroIff(a: nat, b: nat)
 	requires a > 0 && b > 0
-	ensures N(a, b) >= 0
-{
-}
-
-lemma {:verify false} K_LessThan_N(a: nat, b: nat, k: nat)
-	requires a > 0 && b > 0
-	requires 0 <= k <= N(a, b) + 1
-	requires r_k_m1_neq_0: R_k(a, b, k - 1) != 0
-	ensures k + 1 <= N(a, b) + 1
+	ensures forall k : nat :: k == N(a, b) <==> R_k(a, b, k) == 0
+	// ensures k == N(a, b) + 1 <==> R_k(a, b, k - 1) == 0
 {
 }
 
@@ -154,7 +146,7 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 		invariant r_k_m1 == R_k(a, b, k - 1)
 		decreases r_k_m1
 	{
-		K_LessThan_N(a, b, k);
+		RemainderK_WhenZeroIff(a, b);
 		NextRemainerK(a, b, k);
 		assert k + 1 <= N + 1;
 		assert r_k_m1 == R_k(a, b, (k + 1) - 2);
@@ -174,7 +166,7 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 	}
 
 	assert k == N + 1 by {
-		RemainderK_WhenZeroSpecification(a, b);
+		RemainderK_WhenZeroIff(a, b);
 	}
 	assert GreatestCommonDivisor(a, b, r_k_m2) by {
 		RemainderNm1IsGcd(a, b);
