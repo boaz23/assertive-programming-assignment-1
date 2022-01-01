@@ -159,18 +159,16 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 {
 	var a1 := a;
 	var b1 := b;
-	ghost var a1_prev := a;
-	ghost var b1_prev := b;
 
 	while (b1 != 0)
-		invariant a1_prev > 0 && b1_prev > 0
-		invariant forall d: nat :: GreatestCommonDivisor(a, b, d) <==> GreatestCommonDivisor(a1_prev, b1_prev, d)
-		invariant forall d: nat :: GreatestCommonDivisor(a1_prev, b1_prev, d) <==> GreatestCommonDivisor(a1, b1, d)
+		invariant forall d: nat :: GreatestCommonDivisor(a, b, d) <==> GreatestCommonDivisor(a1, b1, d)
 		decreases b1
 	{
-		assert b1 > 0; // This is necessary for dafny to recognize this. Do not remove.
-		a1_prev, b1_prev := a1, b1;
-		GcdInvariantStepProof(a1_prev, b1_prev);
+		// For the lemma's precondition.
+		// This is necessary for dafny to recognize this.
+		// Do not remove.
+		assert b1 > 0; 
+		GcdInvariantStepProof(a1, b1);
 		b1, a1 := a1 % b1, b1;
 	}
 
