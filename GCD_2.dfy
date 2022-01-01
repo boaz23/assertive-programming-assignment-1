@@ -112,8 +112,8 @@ lemma {:verify true} CommonDivisorPersists_BeforeMod(a: nat, b: nat, c: nat)
 		==  { Remainder_Specific(a, b); }
 		(((a / b) * b) + (a % b)) % c;
 		== {
-			Remainder_Specific(a % b, c);
 			Remainder_Specific(b, c);
+			Remainder_Specific(a % b, c);
 		}
 		(
 			(a/b) * (
