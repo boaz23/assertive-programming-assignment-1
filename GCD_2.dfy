@@ -45,8 +45,26 @@ predicate GreatestCommonDivisor(a: nat, b: nat, c: nat)
 }
 
 // :verify false
-lemma {:axiom} MultiplyThenDivideIsId()
-	ensures forall a, b: nat :: b != 0 ==> (b * a) / b == a
+// It's true because of multiplication distributivity and b divides b with no remainder.
+lemma {:axiom} MultDivide(a: nat, b: nat)
+	requires b != 0
+	ensures (b * a) / b == a * (b / b)
+
+lemma {:verify true} MultiplyThenDivideIsId()
+	ensures forall a: nat, b: nat :: b != 0 ==> (b * a) / b == a
+{
+	forall a: nat, b: nat | b != 0 {
+		calc {
+			(b * a) / b;
+			== { MultDivide(a, b); }
+			a * (b / b);
+			== { assert b / b == 1; }
+			a * 1;
+			== { assert a * 1 == a; }
+			a;
+		}
+	}
+}
 
 function Remainder_Definition(a: nat, b: nat): (nat, nat)
 	requires b != 0
