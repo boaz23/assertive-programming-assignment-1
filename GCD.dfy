@@ -95,34 +95,34 @@ function R_k(a: nat, b: nat, k: int): nat
 	else R_k(b, a % b, k - 1)
 }
 
-lemma {:verify false} RemaindersN_NonNegative(a: nat, b: nat)
+lemma {:verify false} N_NonNegative(a: nat, b: nat)
 	requires a > 0
 	ensures N(a, b) == 1 <==> b == 0
 {
 }
 
-// lemma {:verify false} RemainderK_WhenZeroSpecification(a: nat, b: nat)
+// lemma {:verify false} Rk_WhenZeroSpecification(a: nat, b: nat)
 // 	requires a > 0 && b > 0
 // 	ensures R_k(a, b, N(a, b)) == 0
 // 	ensures forall k : nat :: k < N(a, b) ==> R_k(a, b, k) > 0
 // {
 // }
 
-lemma {:verify false} RemainderK_WhenZeroIff(a: nat, b: nat)
+lemma {:verify false} Rk_WhenZeroIff(a: nat, b: nat)
 	requires a > 0 && b > 0
 	ensures forall k : nat :: k == N(a, b) <==> R_k(a, b, k) == 0
 	// ensures k == N(a, b) + 1 <==> R_k(a, b, k - 1) == 0
 {
 }
 
-lemma {:verify false} NextRemainerK(a: nat, b: nat, k: int)
+lemma {:verify false} NextRk(a: nat, b: nat, k: int)
 	requires a > 0 && b > 0
 	requires 0 <= k <= N(a, b)
 	ensures R_k(a, b, k) == R_k(a, b, k - 2) % R_k(a, b, k - 1)
 {
 }
 
-lemma {:verify false} RemainderNm1IsGcd(a: nat, b: nat)
+lemma {:verify false} R_Nm1_IsGcd(a: nat, b: nat)
 	requires a > 0 && b > 0
 	ensures GreatestCommonDivisor(a, b, R_k(a, b, N(a, b) - 1))
 {
@@ -139,15 +139,15 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 	var r_k_m2 := a;
 	var r_k_m1 := b;
 
-	RemaindersN_NonNegative(a, b);
+	N_NonNegative(a, b);
 	while (r_k_m1 != 0)
 		invariant k <= N + 1
 		invariant r_k_m2 == R_k(a, b, k - 2)
 		invariant r_k_m1 == R_k(a, b, k - 1)
 		decreases r_k_m1
 	{
-		RemainderK_WhenZeroIff(a, b);
-		NextRemainerK(a, b, k);
+		Rk_WhenZeroIff(a, b);
+		NextRk(a, b, k);
 		assert k + 1 <= N + 1;
 		assert r_k_m1 == R_k(a, b, (k + 1) - 2);
 		assert r_k_m2 % r_k_m1 == R_k(a, b, (k + 1) - 1);
@@ -166,10 +166,10 @@ method ComputeGCD(a: nat, b: nat) returns (i: nat)
 	}
 
 	assert k == N + 1 by {
-		RemainderK_WhenZeroIff(a, b);
+		Rk_WhenZeroIff(a, b);
 	}
 	assert GreatestCommonDivisor(a, b, r_k_m2) by {
-		RemainderNm1IsGcd(a, b);
+		R_Nm1_IsGcd(a, b);
 	}
 
 	i := r_k_m2;
