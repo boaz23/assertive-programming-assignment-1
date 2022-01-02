@@ -44,27 +44,11 @@ predicate GreatestCommonDivisor(a: nat, b: nat, c: nat)
 	forall d: nat :: CommonDivisor(a, b, d) ==> d <= c
 }
 
+// It's true because of multiplication associativity and
+// b divides itself with no remainder.
 // :verify false
-// It's true because of multiplication distributivity and b divides b with no remainder.
-lemma {:axiom} MultDivide(a: nat, b: nat)
-	requires b != 0
-	ensures (b * a) / b == a * (b / b)
-
-lemma {:verify true} MultiplyThenDivideIsId()
+lemma {:axiom} MultiplyThenDivideIsId()
 	ensures forall a: nat, b: nat :: b != 0 ==> (b * a) / b == a
-{
-	forall a: nat, b: nat | b != 0 {
-		calc {
-			(b * a) / b;
-			== { MultDivide(a, b); }
-			a * (b / b);
-			== { assert b / b == 1; }
-			a * 1;
-			== { assert a * 1 == a; }
-			a;
-		}
-	}
-}
 
 function RemainderDefinitionNumbers(a: nat, b: nat): (nat, nat)
 	requires b != 0
@@ -91,7 +75,8 @@ lemma {:verify true} CommonDivisorPersists_AfterMod(a: nat, b: nat)
 	ensures forall c: nat :: CommonDivisor(a, b, c) ==> CommonDivisor(b, a % b, c)
 {
 	forall c: nat | CommonDivisor(a, b, c) {
-		calc {
+		calc
+		{
 			(a % b) % c;
 			== { assert RemainderDefinition(a, b); }
 			(a - (a/b)*b) % c;
@@ -120,7 +105,8 @@ lemma {:verify true} CommonDivisorPersists_BeforeMod(a: nat, b: nat)
 	ensures forall c:nat :: CommonDivisor(b, a % b, c) ==> CommonDivisor(a, b, c)
 {
 	forall c: nat | CommonDivisor(b, a % b, c) {
-		calc {
+		calc
+		{
 			a % c;
 			==  { assert RemainderDefinition(a, b); }
 			((a/b)*b + a%b) % c;
