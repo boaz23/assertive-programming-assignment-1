@@ -10,10 +10,198 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 	ensures multiset(a[..]) == multiset(old(a[..])[i := key])
 	modifies a
 	decreases V(a, i, key)
+{
+	ghost var q := a[..]; // represents the updated state of `a`, updated when `a` changes.
+	ghost var old_a := a[..]; // stays 'constant' thorught the entire proof
+	
+	assert i < a.Length && a[i] < key;
+	assert hp(q);
+
+	if (i == 0) // please make RootIndex(nat) a predicate method
+	{
+		assert i < a.Length && a[i] < key;
+		assert hp(q);
+		assert i == 0;
+		// ==>?
+		assert hp(q[i := key]);
+		assert multiset(q[i := key]) == multiset(old_a[i := key]);
+
+		a[i] := key;
+		q := a[..];
+
+		assert q == a[..];
+		assert hp(q);
+		assert multiset(q) == multiset(old_a[i := key]);
+	}
+	else
+	{
+		assert i < a.Length && a[i] < key;
+		assert hp(q);
+		assert i > 0; // negation of the guard (outer if) and nat's are never negative
+		// ==> slightly more compact form
+		assert 0 < i < a.Length && a[i] < key;
+		assert hp(q);
+
+		var parentIndex := Parent(i);
+		if (key <= a[parentIndex])
+		{
+			assert 0 < i < a.Length && a[i] < key;
+			assert hp(q);
+			assert key <= a[parentIndex]; // from the guard (inner if)
+			// ==>?
+			assert hp(q[i := key]);
+			assert multiset(q[i := key]) == multiset(old_a[i := key]);
+
+			a[i] := key;
+			q := a[..];
+
+			assert q == a[..];
+			assert hp(q);
+			assert multiset(q) == multiset(old_a[i := key]);
+		}
+		else
+		{
+			assert 0 < i < a.Length && a[i] < key;
+			assert hp(q);
+			assert a[parentIndex] < key; // negation of the guard (inner if)
+
+			ghost var V0 := V(a, i, key);
+			ghost var q' := q[i := q[parentIndex]];
+
+			HeapPropertyMaintained(a, q, q', i, parentIndex, key);
+
+			a[i] := a[parentIndex];
+			
+			assert parentIndex < a.Length && a[parentIndex] < key; // for precondition of the recursion
+			ghost var V := V(a, parentIndex, key);
+			assert 0 <= V < V0; // for termination
+			HeapIncreaseKey(a, parentIndex, key);
+			q := a[..];
+
+			assert q == a[..];
+			assert hp(q); // by the recursion post-condition
+			assert multiset(q) == multiset(q'[parentIndex := key]); // by the recursion post-condition
+			// ==>?
+			assert q == a[..];
+			assert hp(q);
+			assert multiset(q) == multiset(old_a[i := key]);
+		}
+
+		assert q == a[..];
+		assert hp(q);
+		assert multiset(q) == multiset(old_a[i := key]);
+	}
+
+	assert q == a[..];
+	assert hp(q);
+	assert multiset(q) == multiset(old_a[i := key]);
+}
 
 // TODO: provide a definition for this variant function (to help prove termination);
 // do NOT change the signature of this function (even if you end up not using all its arguments)
 function V(a: array<int>, i: nat, key: int): int
+{
+	i
+}
+
+lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat, key: int)
+	requires 0 < i < a.Length
+	requires parentIndex == Parent(i)
+	requires q == a[..]
+	requires q' == q[i := q[parentIndex]]
+	requires hp(q)
+	requires a[parentIndex] < key
+	ensures hp(q')
+{
+	assert q[i] <= q[parentIndex] < key by {
+		assert AncestorIndex(parentIndex, i);
+		assert hp(q);
+	}
+	assert |q'| == |q|;
+
+	// show that for every 2 valid indices for q', they satisfy the heap property.
+	forall i1, i2 : nat | 0 <= i1 < i2 < |q'| && AncestorIndex(i1, i2)
+		ensures q'[i1] >= q'[i2]
+	{
+		if (i1 == i)
+		{
+			assert AncestorIndex(parentIndex, i2) by {
+				assert AncestorIndex(parentIndex, i1) == AncestorIndex(parentIndex, i);
+				assert AncestorIndex(i1, i2);
+				AncestorIndexTransitive(parentIndex, i1, i2);
+			}
+			assert q'[i1] == q[parentIndex] >= q[i2] == q'[i2];
+		}
+		else if (i2 == i)
+		{
+			// dafny manages to proof this by herself as well
+			// should we have written a proof to it?
+
+			assert AncestorIndex(i1, parentIndex) by {
+				assert i1 < i2;
+				assert AncestorIndex(parentIndex, i2) == AncestorIndex(parentIndex, i);
+				assert AncestorIndex(i1, i2);
+				assert i1 <= parentIndex;
+
+				MiddleAncestorIndex(i1, i2, parentIndex);
+			}
+			assert q'[i1] == q[i1] >= q[parentIndex] == q'[i] == q'[i2];
+		}
+		else
+		{
+			// dafny manages to proof this by herself as well
+			// should we have written a proof to it?
+			
+			assert q'[i1] == q[i1] >= q[i2] == q'[i2];
+		}
+	}
+}
+
+lemma MiddleAncestorIndex(i1: nat, i2: nat, parentIndex: nat)
+	requires i1 < i2
+	requires i1 <= parentIndex
+	requires AncestorIndex(i1, i2)
+	requires AncestorIndex(parentIndex, i2)
+	ensures AncestorIndex(i1, parentIndex)
+{
+	// dafny can handle this one herself
+}
+
+lemma {:verify true} AncestorIndexTransitive(i1: nat, i2: nat, i3: nat)
+	requires AncestorIndex(i1, i2)
+	requires AncestorIndex(i2, i3)
+	ensures AncestorIndex(i1, i3)
+{
+	// dafny can handle this one herself
+}
+
+// The 'cleaner' version
+method {:verify false} HeapIncreaseKey'(a: array<int>, i: nat, key: int)
+	requires i < a.Length && a[i] < key
+	requires hp(a[..])
+	ensures hp(a[..])
+	ensures multiset(a[..]) == multiset(old(a[..])[i := key])
+	modifies a
+	decreases V(a, i, key)
+{
+	if (i == 0) // please make RootIndex(nat) a predicate method
+	{
+		a[i] := key;
+	}
+	else
+	{
+		var parentIndex := Parent(i);
+		if (key <= a[parentIndex])
+		{
+			a[i] := key;
+		}
+		else
+		{
+			a[i] := a[parentIndex];
+			HeapIncreaseKey(a, parentIndex, key);
+		}
+	}
+}
 
 method {:verify false} Main() {
 	var a: array<int> := new int[3];
