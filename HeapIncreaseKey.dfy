@@ -74,8 +74,7 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 			a[i] := a[parentIndex];
 			
 			assert parentIndex < a.Length && a[parentIndex] < key; // for pre-condition of the recursive call
-			ghost var V := V(a, parentIndex, key);
-			assert 0 <= V < V0; // for termination
+			assert 0 <= V(a, parentIndex, key) < V0; // for termination
 			HeapIncreaseKey(a, parentIndex, key);
 			q := a[..];
 
@@ -115,6 +114,10 @@ lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, p
 {
 	assert |q'| == |q|;
 
+	assert AncestorIndex(parentIndex, i) by {
+		assert parentIndex == Parent(i);
+	}
+
 	// show that for every 2 valid indices for q', they satisfy the heap property.
 	forall i1, i2 : nat | 0 <= i1 < i2 < |q'| && AncestorIndex(i1, i2)
 		ensures q'[i1] >= q'[i2]
@@ -122,7 +125,10 @@ lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, p
 		if (i1 == i)
 		{
 			assert AncestorIndex(parentIndex, i2) by {
-				assert AncestorIndex(parentIndex, i1) == AncestorIndex(parentIndex, i);
+				assert AncestorIndex(parentIndex, i1) by {
+					assert AncestorIndex(parentIndex, i);
+					assert i1 == i;
+				}
 				assert AncestorIndex(i1, i2);
 				AncestorIndexTransitive(parentIndex, i1, i2);
 			}
@@ -134,10 +140,18 @@ lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, p
 			// should we have written a proof to it?
 
 			assert AncestorIndex(i1, parentIndex) by {
-				assert i1 < i2;
-				assert AncestorIndex(i1, i2);
-				assert AncestorIndex(parentIndex, i2) == AncestorIndex(parentIndex, i);
-				assert i1 <= parentIndex;
+				assert i1 < i by {
+					assert i1 < i2;
+					assert i2 == i;
+				}
+				assert AncestorIndex(i1, i) by {
+					assert AncestorIndex(i1, i2);
+					assert i2 == i;
+				}
+				assert AncestorIndex(parentIndex, i);
+				assert i1 <= parentIndex by {
+					LeastNonSelfAncestor(i1, i, parentIndex);
+				}
 
 				MiddleAncestorIndex(i1, i2, parentIndex);
 			}
@@ -153,12 +167,21 @@ lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, p
 	}
 }
 
-lemma MiddleAncestorIndex(i1: nat, i2: nat, parentIndex: nat)
+lemma MiddleAncestorIndex(i1: nat, i2: nat, i3: nat)
 	requires i1 < i2
-	requires i1 <= parentIndex
+	requires i1 <= i3
 	requires AncestorIndex(i1, i2)
-	requires AncestorIndex(parentIndex, i2)
-	ensures AncestorIndex(i1, parentIndex)
+	requires AncestorIndex(i3, i2)
+	ensures AncestorIndex(i1, i3)
+{
+	// dafny can handle this one herself
+}
+
+lemma LeastNonSelfAncestor(i1: nat, i2: nat, i3: nat)
+	requires i1 < i2
+	requires AncestorIndex(i1, i2)
+	requires i3 == Parent(i2)
+	ensures i1 <= i3
 {
 	// dafny can handle this one herself
 }
