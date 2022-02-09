@@ -19,10 +19,12 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 
 	if (i == 0) // please make RootIndex(nat) a predicate method
 	{
-		assert i < a.Length && a[i] < key;
+		assert q == old_a == a[..];
+		assert i < a.Length == |q| && a[i] == q[i] < key;
 		assert hp(q);
 		assert i == 0;
 		// ==>?
+		RootSetKeyValid(old_a, q, i, key);
 		assert hp(q[i := key]);
 		assert multiset(q[i := key]) == multiset(old_a[i := key]);
 
@@ -35,20 +37,26 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 	}
 	else
 	{
-		assert i < a.Length && a[i] < key;
+		assert q == old_a == a[..];
+		assert i < a.Length == |old_a| && a[i] == old_a[i] < key;
 		assert hp(q);
 		assert i > 0; // negation of the guard (outer if) and nat's are never negative
 		// ==> slightly more compact form
-		assert 0 < i < a.Length && a[i] < key;
+		assert q == old_a == a[..];
+		assert 0 < i < a.Length == |old_a| && a[i] == old_a[i] < key;
 		assert hp(q);
 
 		var parentIndex := Parent(i);
+		assert parentIndex == Parent(i);
 		if (key <= a[parentIndex])
 		{
-			assert 0 < i < a.Length && a[i] < key;
+			assert q == old_a == a[..];
+			assert 0 < i < a.Length == |old_a| && a[i] == old_a[i] < key;
 			assert hp(q);
-			assert key <= a[parentIndex]; // from the guard (inner if)
+			assert parentIndex == Parent(i);
+			assert key <= a[parentIndex] == old_a[parentIndex]; // from the guard (inner if)
 			// ==>?
+			SetKeyWhenParentIsBiggerIsValid(old_a, q, i, parentIndex, key);
 			assert hp(q[i := key]);
 			assert multiset(q[i := key]) == multiset(old_a[i := key]);
 
@@ -61,8 +69,10 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 		}
 		else
 		{
-			assert 0 < i < a.Length && a[i] < key;
+			assert q == old_a == a[..];
+			assert 0 < i < a.Length == |old_a| && a[i] == old_a[i] < key;
 			assert hp(q);
+			assert parentIndex == Parent(i);
 			assert a[parentIndex] < key; // negation of the guard (inner if)
 
 			ghost var V0 := V(a, i, key);
@@ -72,16 +82,26 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 			// ensuring the next statement is ok
 			HeapPropertyMaintained(a, q, q', i, parentIndex);
 			a[i] := a[parentIndex];
+			q := a[..];
 			
 			assert parentIndex < a.Length && a[parentIndex] < key; // for pre-condition of the recursive call
-			assert 0 <= V(a, parentIndex, key) < V0; // for termination
+			assert q == a[..] && hp(q); // for pre-condition of the recursive call
+			assert 0 <= V(a, parentIndex, key) < V0 by {  // for termination
+				assert i > 0; // lemma pre-condition, from above, no changes occured
+				assert parentIndex == Parent(i); // lemma pre-condition, from above, no changes occured
+				HeapIncreaseKeyRecursionTerminates(a, i, parentIndex, key);
+			}
 			HeapIncreaseKey(a, parentIndex, key);
 			q := a[..];
 
 			assert q == a[..];
+			assert 0 < i < |old_a|; // from above, no changes affected it
+			assert parentIndex == Parent(i); // from above, no changes affected it
+			assert q' == old_a[i := old_a[parentIndex]]; // from above, no changes affected it
 			assert hp(q); // by the recursive call post-condition
 			assert multiset(q) == multiset(q'[parentIndex := key]); // by the recursive call post-condition
 			// ==>?
+			RecursionEnsuresIncreaseKey(old_a, q, q', i, parentIndex, key);
 			assert q == a[..];
 			assert hp(q);
 			assert multiset(q) == multiset(old_a[i := key]);
@@ -102,6 +122,53 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 function V(a: array<int>, i: nat, key: int): int
 {
 	i
+}
+
+lemma RootSetKeyValid(old_a: seq<int>, q: seq<int>, i: nat, key: int)
+	requires q == old_a
+	requires i < |q| && q[i] < key
+	requires hp(q)
+	requires i == 0
+
+	ensures hp(q[i := key])
+	ensures multiset(q[i := key]) == multiset(old_a[i := key])
+{
+	// dafny can handle this one herself
+}
+
+lemma SetKeyWhenParentIsBiggerIsValid(old_a: seq<int>, q: seq<int>, i: nat, parentIndex: nat, key: int)
+	requires q == old_a
+	requires 0 < i < |old_a| && old_a[i] < key
+	requires hp(q)
+	requires parentIndex == Parent(i)
+	requires key <= old_a[parentIndex]
+
+	ensures hp(q[i := key])
+	ensures multiset(q[i := key]) == multiset(old_a[i := key])
+{
+	// dafny can handle this one herself
+}
+
+lemma RecursionEnsuresIncreaseKey(old_a: seq<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat, key: int)
+	requires 0 < i < |old_a|
+	requires parentIndex == Parent(i)
+
+	requires q' == old_a[i := old_a[parentIndex]]
+	requires hp(q)
+	requires multiset(q) == multiset(q'[parentIndex := key])
+
+	ensures hp(q)
+	ensures multiset(q) == multiset(old_a[i := key])
+{
+	// dafny can handle this one herself
+}
+
+lemma HeapIncreaseKeyRecursionTerminates(a: array<int>, i: nat, parentIndex: nat, key: int)
+	requires i > 0
+	requires parentIndex == Parent(i)
+	ensures 0 <= V(a, parentIndex, key) < V(a, i, key)
+{
+	// dafny can handle this one herself
 }
 
 lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat)
