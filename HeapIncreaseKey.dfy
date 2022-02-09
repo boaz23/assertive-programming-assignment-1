@@ -172,7 +172,7 @@ lemma {:verify true} AncestorIndexTransitive(i1: nat, i2: nat, i3: nat)
 }
 
 // The 'cleaner' version
-method {:verify false} HeapIncreaseKey'(a: array<int>, i: nat, key: int)
+method {:verify true} HeapIncreaseKey'(a: array<int>, i: nat, key: int)
 	requires i < a.Length && a[i] < key
 	requires hp(a[..])
 	ensures hp(a[..])
@@ -180,6 +180,7 @@ method {:verify false} HeapIncreaseKey'(a: array<int>, i: nat, key: int)
 	modifies a
 	decreases V(a, i, key)
 {
+	ghost var q := a[..];
 	if (i == 0) // please make RootIndex(nat) a predicate method
 	{
 		a[i] := key;
@@ -193,6 +194,8 @@ method {:verify false} HeapIncreaseKey'(a: array<int>, i: nat, key: int)
 		}
 		else
 		{
+			ghost var q' := q[i := q[parentIndex]];
+			HeapPropertyMaintained(a, q, q', i, parentIndex);
 			a[i] := a[parentIndex];
 			HeapIncreaseKey(a, parentIndex, key);
 		}

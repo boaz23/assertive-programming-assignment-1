@@ -83,7 +83,10 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 		// t, stack := stack[0], stack[1..];
 		var t := stack[0];
 		stack := stack[1..];
+
 		assert s == [t] + stack;
+		assert LoopInv(tree, s, io.omega, old(io.omega));
+
 		match t
 		{
 			case Tip(x) =>
@@ -94,6 +97,7 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 				assert LoopInv(tree, stack, io.omega + [x], old(io.omega)); // maintaining the loop invariant
 				io.Output(x);
 				assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
+				assert 0 <= ForestSize(stack) < V0; // the loop termination
 			}
 			case Node(t1, t2) =>
 			{
@@ -103,11 +107,12 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 				assert LoopInv(tree, [t1, t2] + stack, io.omega, old(io.omega));
 				stack := [t1, t2] + stack;
 				assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
+				assert 0 <= ForestSize(stack) < V0; // the loop termination
 			}
 		}
 
 		assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
-		assert 0 <= ForestSize(stack) < V0; // the loop terminates
+		assert 0 <= ForestSize(stack) < V0; // the loop termination
 	}
 
 	assert LoopInv(tree, stack, io.omega, old(io.omega)); // from the loop invariant
@@ -151,7 +156,6 @@ method FrontierIter'<T>(tree: BT<T>, io: IO<T>)
 		decreases ForestSize(stack)
 	{
 		ghost var V0 := ForestSize(stack);
-
 		var t := stack[0];
 		stack := stack[1..];
 		match t

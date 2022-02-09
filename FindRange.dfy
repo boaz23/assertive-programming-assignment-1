@@ -178,7 +178,7 @@ method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right
 				high := middle -1;
 			} else{
 				low := middle+1;
-			}	
+			}
 		}
 		left := high + 1;
 		low,high := left,|q|-1;
