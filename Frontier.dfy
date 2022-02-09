@@ -66,3 +66,96 @@ function Frontiers<T>(trees: seq<BT<T>>): seq<T>
 method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 	modifies io
 	ensures io.omega == old(io.omega) + Frontier(tree)
+{
+	var stack := [tree]; // grows towards the beginning of the sequence
+	while stack != []
+		invariant LoopInv(tree, stack, io.omega, old(io.omega))
+		decreases ForestSize(stack)
+	{
+		ghost var s := stack;
+		ghost var V0 := ForestSize(stack);
+
+		assert s != [];
+		assert LoopInv(tree, s, io.omega, old(io.omega));
+
+		var t;
+		t, stack := stack[0], stack[1..];
+		assert s == [t] + stack;
+		match t
+		{
+			case Tip(x) =>
+			{
+				assert s == [t] + stack;
+				assert LoopInv(tree, s, io.omega, old(io.omega));
+				// ==>?
+				assert LoopInv(tree, stack, io.omega + [x], old(io.omega)); // maintaining the loop invariant
+				io.Output(x);
+				assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
+			}
+			case Node(t1, t2) =>
+			{
+				assert s == [t] + stack;
+				assert LoopInv(tree, s, io.omega, old(io.omega));
+				// ==>?
+				assert LoopInv(tree, [t1, t2] + stack, io.omega, old(io.omega));
+				stack := [t1, t2] + stack;
+				assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
+			}
+		}
+
+		assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
+		assert 0 <= ForestSize(stack) < V0; // the loop terminates
+	}
+
+	assert LoopInv(tree, stack, io.omega, old(io.omega)); // from the loop invariant
+	assert stack == []; // from the negation of the loop guard
+	// ==>
+	assert io.omega == old(io.omega) + Frontier(tree);
+}
+
+predicate LoopInv<T>(tree: BT<T>, forest: seq<BT<T>>, omega: seq<T>, old_omega: seq<T>)
+{
+	omega + Frontiers(forest) == old_omega + Frontier(tree)
+}
+
+function TreeSize<T>(tree: BT<T>): nat
+	decreases tree
+	ensures TreeSize(tree) >= 1
+{
+	match tree
+	{
+		case Tip(x) => 1
+		case Node(t1, t2) => 1 + TreeSize(t1) + TreeSize(t2)
+	}
+}
+
+function ForestSize<T>(forest: seq<BT<T>>): nat
+	decreases forest
+	ensures ForestSize(forest) >= 0
+{
+	if forest == [] then 0
+	else TreeSize(forest[0]) + ForestSize(forest[1..])
+}
+
+// The cleaner version
+method FrontierIter'<T>(tree: BT<T>, io: IO<T>)
+	modifies io
+	ensures io.omega == old(io.omega) + Frontier(tree)
+{
+	var stack := [tree]; // grows towards the beginning of the sequence
+	while stack != []
+		invariant io.omega + Frontiers(stack) == old(io.omega) + Frontier(tree)
+		decreases ForestSize(stack)
+	{
+		ghost var V0 := ForestSize(stack);
+		var tree;
+		tree, stack := stack[0], stack[1..];
+		match tree
+		{
+			case Tip(x) => io.Output(x);
+			case Node(t1, t2) => stack := [t1, t2] + stack;
+		}
+
+		assert 0 <= ForestSize(stack) < V0;
+	}
+}
