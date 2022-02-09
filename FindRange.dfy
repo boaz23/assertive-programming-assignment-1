@@ -143,7 +143,6 @@ predicate Sorted(q: seq<int>)
 	forall i,j :: 0 <= i <= j < |q| ==> q[i] <= q[j] 
 }
 
-
 method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	requires Sorted(q)
 	ensures left <= right <= |q|
@@ -151,38 +150,41 @@ method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right
 	ensures forall i :: left <= i < right ==> q[i] == key
 	ensures forall i :: right <= i < |q| ==> q[i] > key
 {
-	left,right := 0,|q|;
-	var low:int,high:int := 0,|q|-1;
-	while (low <= high)
-		invariant -1 <= high <= |q|-1 < right;
-		invariant 0 <= low <= |q|;
-		invariant forall i :: 0 <= i < low ==> q[i] < key;
-		invariant forall i :: high < i < |q| ==> q[i] >= key;
-		decreases high-low;
-	{
-		var middle := (low+high)/2;
-		if (q[middle] >= key) {
-			high := middle-1;
-		} else {
-			low := middle+1;
-		}
-	}
-	left := high + 1;
+	left := BinarySearch(q, key, 0, |q|-1, (n, m) => (n >= m));
+	right := BinarySearch(q, key, left, |q|-1, (n, m) => (n > m));
+}
 
-	low,high := left,|q|-1;
+method BinarySearch(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool) returns (index: nat)
+	requires Sorted(q)
+	requires 0 <= lowerBound <= |q|
+	requires lowerBound-1 <= upperBound < |q|
+	requires forall i :: 0 <= i < lowerBound ==> !comparer(q[i], key)
+	requires forall i :: upperBound < i < |q| ==> comparer(q[i], key)
+	// comparer is '>' or '>='
+	requires
+		(forall n1, n2 :: comparer(n1, n2) == (n1 >  n2)) ||
+		(forall n1, n2 :: comparer(n1, n2) == (n1 >= n2))
+
+	ensures lowerBound <= index <= upperBound + 1
+	ensures forall i :: 0 <= i < index ==> !comparer(q[i], key)
+	ensures forall i :: index <= i < |q| ==> comparer(q[i], key)
+{
+	var low : int := lowerBound;
+	var high : int := upperBound;
 	while (low <= high)
-		invariant left-1 <= high <= |q|-1 < right;
-		invariant left <= low <= |q|;
-		invariant forall i :: 0 <= i < low ==> q[i] <= key;
-		invariant forall i :: high < i < |q| ==> q[i] > key;
+		invariant lowerBound-1 <= high <= upperBound;
+		invariant lowerBound <= low <= upperBound + 1;
+		invariant forall i :: 0 <= i < low ==> !comparer(q[i], key);
+		invariant forall i :: high < i < |q| ==> comparer(q[i], key);
 		decreases high-low
 	{
 		var middle:= (low+high)/2;
-		if (q[middle] > key) {
+		if (comparer(q[middle], key)) {
 			high := middle-1;
 		} else {
 			low := middle+1;
 		}
 	}
-	right := high + 1;
+
+	index := high + 1;
 }
