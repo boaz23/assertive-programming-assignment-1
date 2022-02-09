@@ -12,7 +12,7 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 	decreases V(a, i, key)
 {
 	ghost var q := a[..]; // represents the updated state of `a`, updated when `a` changes.
-	ghost var old_a := a[..]; // stays 'constant' thorught the entire proof
+	ghost var old_a := q; // stays 'constant' thorught the entire proof
 	
 	assert i < a.Length && a[i] < key;
 	assert hp(q);
@@ -68,19 +68,20 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 			ghost var V0 := V(a, i, key);
 			ghost var q' := q[i := q[parentIndex]];
 
-			HeapPropertyMaintained(a, q, q', i, parentIndex, key);
-
+			// for the pre-condition of the recursive call,
+			// ensuring the next statement is ok
+			HeapPropertyMaintained(a, q, q', i, parentIndex);
 			a[i] := a[parentIndex];
 			
-			assert parentIndex < a.Length && a[parentIndex] < key; // for precondition of the recursion
+			assert parentIndex < a.Length && a[parentIndex] < key; // for pre-condition of the recursive call
 			ghost var V := V(a, parentIndex, key);
 			assert 0 <= V < V0; // for termination
 			HeapIncreaseKey(a, parentIndex, key);
 			q := a[..];
 
 			assert q == a[..];
-			assert hp(q); // by the recursion post-condition
-			assert multiset(q) == multiset(q'[parentIndex := key]); // by the recursion post-condition
+			assert hp(q); // by the recursive call post-condition
+			assert multiset(q) == multiset(q'[parentIndex := key]); // by the recursive call post-condition
 			// ==>?
 			assert q == a[..];
 			assert hp(q);
@@ -104,19 +105,14 @@ function V(a: array<int>, i: nat, key: int): int
 	i
 }
 
-lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat, key: int)
+lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat)
 	requires 0 < i < a.Length
 	requires parentIndex == Parent(i)
 	requires q == a[..]
 	requires q' == q[i := q[parentIndex]]
 	requires hp(q)
-	requires a[parentIndex] < key
 	ensures hp(q')
 {
-	assert q[i] <= q[parentIndex] < key by {
-		assert AncestorIndex(parentIndex, i);
-		assert hp(q);
-	}
 	assert |q'| == |q|;
 
 	// show that for every 2 valid indices for q', they satisfy the heap property.
@@ -139,8 +135,8 @@ lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, p
 
 			assert AncestorIndex(i1, parentIndex) by {
 				assert i1 < i2;
-				assert AncestorIndex(parentIndex, i2) == AncestorIndex(parentIndex, i);
 				assert AncestorIndex(i1, i2);
+				assert AncestorIndex(parentIndex, i2) == AncestorIndex(parentIndex, i);
 				assert i1 <= parentIndex;
 
 				MiddleAncestorIndex(i1, i2, parentIndex);
