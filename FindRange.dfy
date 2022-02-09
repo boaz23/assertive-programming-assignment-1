@@ -175,7 +175,7 @@ method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right
 	while (low <= high) 
 		invariant high >= left - 1;
 		invariant -1 <= high <= |q|-1 < right;
-		invariant 0 <= low <= |q|;
+		invariant left <= low <= |q|;
 		invariant forall i :: 0 <= i < low ==> q[i] <= key;
 		invariant forall i :: high < i < |q| ==> q[i] > key;
 		decreases high-low
