@@ -152,52 +152,40 @@ method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right
 	ensures forall i :: right <= i < |q| ==> q[i] > key
 {
 	left,right := 0,|q|;
-	// all elements in q are greater than key or q is empty
-	if(|q| == 0 || q[0] > key){
-		left,right := 0,0;
-	}
-		// all elements in q are less than key
-	else if (q[|q|-1] < key){
-		left,right := |q|,|q|;
-	}
-	// key is in q or in the range of number in q
-	else
+	var low:int,high:int := 0,|q|-1;
+	var middle:int := (low+high)/2;
+	while (low <= high)
+		invariant 0 <= left <= right == |q|;
+		invariant -1 <= high <= |q|-1;
+		invariant 0 <= low <= |q|;
+		invariant forall i :: 0 <= i < low ==> q[i] < key;
+		invariant forall i :: high < i < |q| ==> q[i] >= key;
+		decreases high-low;
 	{
-		var low,high := 0,|q|-1;
-		var middle:nat := (low+high)/2;
-		while (low <= high)
-			invariant 0 <= left <= middle < right == |q|;
-			invariant -1 <= high <= |q|-1;
-			invariant 0 <= low <= |q|;
-			invariant forall i :: 0 <= i < low ==> q[i] < key;
-			invariant forall i :: high < i < |q| ==> q[i] >= key;
-			decreases high-low;
-		{
-			middle := (low+high)/2;
-			if (q[middle] >= key){
-				high := middle -1;
-			} else{
-				low := middle+1;
-			}
-		}
-		left := high + 1;
-		low,high := left,|q|-1;
 		middle := (low+high)/2;
-		while (low <= high) 
-			invariant high >= left - 1;
-			invariant 0 <= high <= |q|-1 < right;
-			invariant 0 <= low <= |q|;
-			invariant forall i :: 0 <= i < low ==> q[i] <= key;
-			invariant forall i :: high < i < |q| ==> q[i] > key;
-			decreases high-low
-		{
-			middle:= (low+high)/2;
-			if (q[middle] > key){
-				high := middle -1;
-			}else{
-				low := middle + 1;
-			}
+		if (q[middle] >= key){
+			high := middle -1;
+		} else{
+			low := middle+1;
+		}	
+	}
+	left := high + 1;
+	low,high := left,|q|-1;
+	middle := (low+high)/2;
+	while (low <= high) 
+		invariant high >= left - 1;
+		invariant -1 <= high <= |q|-1 < right;
+		invariant 0 <= low <= |q|;
+		invariant forall i :: 0 <= i < low ==> q[i] <= key;
+		invariant forall i :: high < i < |q| ==> q[i] > key;
+		decreases high-low
+	{
+		middle:= (low+high)/2;
+		if (q[middle] > key){
+			high := middle -1;
+		}else{
+			low := middle + 1;
 		}
-		right := high + 1;
-	}	
+	}
+	right := high + 1;
 }
