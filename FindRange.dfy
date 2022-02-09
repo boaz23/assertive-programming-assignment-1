@@ -154,28 +154,42 @@ method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right
 	right := BinarySearch(q, key, left, |q|-1, (n, m) => (n > m));
 }
 
+// all the values in the range satisfy `comparer` (comparer(q[i], key) == true)
+predicate RangeSatisfiesComparer(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool)
+	requires 0 <= lowerBound <= upperBound <= |q|
+{
+	forall i :: lowerBound <= i < upperBound ==> comparer(q[i], key)
+}
+
+// all the values in the range satisfy `!comparer` (comparer(q[i], key) == false)
+predicate RangeSatisfiesComparerNegation(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool)
+	requires 0 <= lowerBound <= upperBound <= |q|
+{
+	RangeSatisfiesComparer(q, key, lowerBound, upperBound, (n1, n2) => !comparer(n1, n2))
+}
+
 method BinarySearch(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool) returns (index: nat)
 	requires Sorted(q)
 	requires 0 <= lowerBound <= |q|
 	requires lowerBound-1 <= upperBound < |q|
-	requires forall i :: 0 <= i < lowerBound ==> !comparer(q[i], key)
-	requires forall i :: upperBound < i < |q| ==> comparer(q[i], key)
+	requires RangeSatisfiesComparerNegation(q, key, 0, lowerBound, comparer)
+	requires RangeSatisfiesComparer(q, key, upperBound + 1, |q|, comparer)
 	// comparer is '>' or '>='
 	requires
 		(forall n1, n2 :: comparer(n1, n2) == (n1 >  n2)) ||
 		(forall n1, n2 :: comparer(n1, n2) == (n1 >= n2))
 
 	ensures lowerBound <= index <= upperBound + 1
-	ensures forall i :: 0 <= i < index ==> !comparer(q[i], key)
-	ensures forall i :: index <= i < |q| ==> comparer(q[i], key)
+	ensures RangeSatisfiesComparerNegation(q, key, 0, index, comparer)
+	ensures RangeSatisfiesComparer(q, key, index, |q|, comparer)
 {
 	var low : int := lowerBound;
 	var high : int := upperBound;
 	while (low <= high)
 		invariant lowerBound-1 <= high <= upperBound;
 		invariant lowerBound <= low <= upperBound + 1;
-		invariant forall i :: 0 <= i < low ==> !comparer(q[i], key);
-		invariant forall i :: high < i < |q| ==> comparer(q[i], key);
+		invariant RangeSatisfiesComparerNegation(q, key, 0, low, comparer)
+		invariant RangeSatisfiesComparer(q, key, high + 1, |q|, comparer)
 		decreases high-low
 	{
 		var middle:= (low+high)/2;
