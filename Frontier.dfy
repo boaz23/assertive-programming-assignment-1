@@ -93,8 +93,11 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 			{
 				assert s == [t] + stack;
 				assert LoopInv(tree, s, io.omega, old(io.omega));
+				assert t == Tip(x);
 				// ==>?
+				EnsureInvTip(tree, stack, s, t, x, io.omega, old(io.omega));
 				assert LoopInv(tree, stack, io.omega + [x], old(io.omega)); // maintaining the loop invariant
+
 				io.Output(x);
 				assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
 				assert 0 <= ForestSize(stack) < V0; // the loop termination
@@ -103,8 +106,11 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 			{
 				assert s == [t] + stack;
 				assert LoopInv(tree, s, io.omega, old(io.omega));
+				assert t == Node(t1, t2);
 				// ==>?
+				EnsureInvNode(tree, stack, s, t, t1, t2, io.omega, old(io.omega));
 				assert LoopInv(tree, [t1, t2] + stack, io.omega, old(io.omega));
+
 				stack := [t1, t2] + stack;
 				assert LoopInv(tree, stack, io.omega, old(io.omega)); // maintaining the loop invariant
 				assert 0 <= ForestSize(stack) < V0; // the loop termination
@@ -118,6 +124,7 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 	assert LoopInv(tree, stack, io.omega, old(io.omega)); // from the loop invariant
 	assert stack == []; // from the negation of the loop guard
 	// ==>
+	EnsurePostCondition(tree, stack, io.omega, old(io.omega));
 	assert io.omega == old(io.omega) + Frontier(tree);
 }
 
@@ -143,6 +150,32 @@ function ForestSize<T>(forest: seq<BT<T>>): nat
 {
 	if forest == [] then 0
 	else TreeSize(forest[0]) + ForestSize(forest[1..])
+}
+
+lemma EnsureInvTip<T>(tree: BT<T>, stack: seq<BT<T>>, s: seq<BT<T>>, t: BT<T>, x: T, omega: seq<T>, old_omega: seq<T>)
+	requires s == [t] + stack
+	requires LoopInv(tree, s, omega, old_omega)
+	requires t == Tip(x)
+	
+	ensures LoopInv(tree, stack, omega + [x], old_omega)
+{
+}
+
+lemma EnsureInvNode<T>(tree: BT<T>, stack: seq<BT<T>>, s: seq<BT<T>>, t: BT<T>, t1: BT<T>, t2: BT<T>, omega: seq<T>, old_omega: seq<T>)
+	requires s == [t] + stack
+	requires LoopInv(tree, s, omega, old_omega)
+	requires t == Node(t1, t2)
+	
+	ensures LoopInv(tree, [t1, t2] + stack, omega, old_omega)
+{
+}
+
+lemma {:induction false} EnsurePostCondition<T>(tree: BT<T>, stack: seq<BT<T>>, omega: seq<T>, old_omega: seq<T>)
+	requires LoopInv(tree, stack, omega, old_omega)
+	requires stack == []
+
+	ensures omega == old_omega + Frontier(tree)
+{
 }
 
 // The cleaner version

@@ -78,9 +78,11 @@ method HeapIncreaseKey(a: array<int>, i: nat, key: int)
 			ghost var V0 := V(a, i, key);
 			ghost var q' := q[i := q[parentIndex]];
 
-			// for the pre-condition of the recursive call,
-			// ensuring the next statement is ok
-			HeapPropertyMaintained(a, q, q', i, parentIndex);
+			assert hp(q') by {
+				// for the pre-condition of the recursive call,
+				// ensuring the next statement is ok
+				HeapPropertyMaintained(a, q, q', i, parentIndex);
+			}
 			a[i] := a[parentIndex];
 			q := a[..];
 			
@@ -133,7 +135,6 @@ lemma RootSetKeyValid(old_a: seq<int>, q: seq<int>, i: nat, key: int)
 	ensures hp(q[i := key])
 	ensures multiset(q[i := key]) == multiset(old_a[i := key])
 {
-	// dafny can handle this one herself
 }
 
 lemma SetKeyWhenParentIsBiggerIsValid(old_a: seq<int>, q: seq<int>, i: nat, parentIndex: nat, key: int)
@@ -146,7 +147,6 @@ lemma SetKeyWhenParentIsBiggerIsValid(old_a: seq<int>, q: seq<int>, i: nat, pare
 	ensures hp(q[i := key])
 	ensures multiset(q[i := key]) == multiset(old_a[i := key])
 {
-	// dafny can handle this one herself
 }
 
 lemma RecursionEnsuresIncreaseKey(old_a: seq<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat, key: int)
@@ -160,7 +160,6 @@ lemma RecursionEnsuresIncreaseKey(old_a: seq<int>, q: seq<int>, q': seq<int>, i:
 	ensures hp(q)
 	ensures multiset(q) == multiset(old_a[i := key])
 {
-	// dafny can handle this one herself
 }
 
 lemma HeapIncreaseKeyRecursionTerminates(a: array<int>, i: nat, parentIndex: nat, key: int)
@@ -168,7 +167,6 @@ lemma HeapIncreaseKeyRecursionTerminates(a: array<int>, i: nat, parentIndex: nat
 	requires parentIndex == Parent(i)
 	ensures 0 <= V(a, parentIndex, key) < V(a, i, key)
 {
-	// dafny can handle this one herself
 }
 
 lemma HeapPropertyMaintained(a: array<int>, q: seq<int>, q': seq<int>, i: nat, parentIndex: nat)
@@ -241,7 +239,6 @@ lemma MiddleAncestorIndex(i1: nat, i2: nat, i3: nat)
 	requires AncestorIndex(i3, i2)
 	ensures AncestorIndex(i1, i3)
 {
-	// dafny can handle this one herself
 }
 
 lemma LeastNonSelfAncestor(i1: nat, i2: nat, i3: nat)
@@ -250,7 +247,6 @@ lemma LeastNonSelfAncestor(i1: nat, i2: nat, i3: nat)
 	requires i3 == Parent(i2)
 	ensures i1 <= i3
 {
-	// dafny can handle this one herself
 }
 
 lemma {:verify true} AncestorIndexTransitive(i1: nat, i2: nat, i3: nat)
@@ -258,7 +254,6 @@ lemma {:verify true} AncestorIndexTransitive(i1: nat, i2: nat, i3: nat)
 	requires AncestorIndex(i2, i3)
 	ensures AncestorIndex(i1, i3)
 {
-	// dafny can handle this one herself
 }
 
 // The 'cleaner' version
