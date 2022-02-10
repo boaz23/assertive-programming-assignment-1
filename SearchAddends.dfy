@@ -27,6 +27,35 @@ predicate HasAddends(q: seq<int>, x: int)
 	exists i,j :: 0 <= i < j < |q| && q[i] + q[j] == x
 }
 
+method FindAddends(q: seq<int>, x: int) returns (i: nat, j: nat)
+	requires Sorted(q) && HasAddends(q, x)
+	ensures i < j < |q| && q[i]+q[j] == x
+{
+	i := 0;
+	j := |q| - 1;
+	var sum := q[i] + q[j];
+
+	while sum != x
+		invariant LoopInv(q, x, i, j, sum)
+		decreases j - i
+	{
+		if (sum > x)
+		{
+			// Sum it too big, lower it by decreasing the high index
+			LoopInvWhenSumIsBigger(q, x, i, j, sum);
+			j := j - 1;
+		}
+		// 'sum == x' cannot occur because the loop's guard is 'sum !=x'.
+		else // (sum < x)
+		{
+			// Sum is too small, make it bigger by increasing the low index.
+			i := i + 1;
+		}
+
+		sum := q[i] + q[j];
+	}
+}
+
 predicate IsValidIndex<T>(q: seq<T>, i: nat)
 {
 	0 <= i < |q|
@@ -64,87 +93,4 @@ lemma LoopInvWhenSumIsBigger(q: seq<int>, x: int, i: nat, j: nat, sum: int)
 	ensures HasAddendsInIndicesRange(q, x, i, j - 1)
 {
 	assert q[i..j] < q[i..(j + 1)];
-}
-
-method FindAddends'(q: seq<int>, x: int) returns (i: nat, j: nat)
-	requires Sorted(q) && HasAddends(q, x)
-	ensures i < j < |q| && q[i]+q[j] == x
-{
-	i := 0;
-	j := |q| - 1;
-	var sum := q[i] + q[j];
-
-	while sum != x
-		invariant LoopInv(q, x, i, j, sum)
-		decreases j - i
-	{
-		if (sum > x)
-		{
-			// Sum it too big, lower it by decreasing the high index
-			LoopInvWhenSumIsBigger(q, x, i, j, sum);
-			j := j - 1;
-		}
-		// 'sum == x' cannot occur because the loop's guard is 'sum !=x'.
-		else // (sum < x)
-		{
-			// Sum is too small, make it bigger by increasing the low index.
-			i := i + 1;
-		}
-
-		sum := q[i] + q[j];
-	}
-}
-
-method FindAddends(q: seq<int>, x: int) returns (i: nat, j: nat)
-	requires Sorted(q) && HasAddends(q, x)
-	ensures i < j < |q| && q[i]+q[j] == x
-{
-	i := 0;
-	j := |q| - 1;
-	var sum := q[i] + q[j];
-
-	while sum != x
-		invariant LoopInv(q, x, i, j, sum)
-		decreases j - i
-	{
-		assert Sorted(q) && HasAddends(q, x); // from method's pre-condition
-		assert sum != x; // from loop guard;
-		assert LoopInv(q, x, i, j, sum); // from loop invariant
-
-		if (sum > x)
-		{
-			// Sum it too big, lower it by decreasing the high index
-			assert Sorted(q) && HasAddends(q, x); // from method's pre-condition
-			assert sum != x; // from loop guard;
-			assert LoopInv(q, x, i, j, sum); // from loop invariant
-			assert sum > x; // from the if guard
-			// ==>?
-			LoopInvWhenSumIsBigger(q, x, i, j, sum);
-			assert LoopInv(q, x, i, j - 1, q[i] + q[j - 1]);
-			j := j - 1;
-			assert LoopInv(q, x, i, j, q[i] + q[j]);
-		}
-		// 'sum == x' cannot occur because the loop's guard is 'sum !=x'.
-		else // (sum < x)
-		{
-			// Sum is too small, make it bigger by increasing the low index.
-			assert Sorted(q) && HasAddends(q, x); // from method's pre-condition
-			assert sum != x; // from loop guard;
-			assert LoopInv(q, x, i, j, sum); // from loop invariant
-			assert sum < x; // from the negation of the if guard
-			// ==>?
-			assert LoopInv(q, x, i + 1, j, q[i + 1] + q[j]);
-			i := i + 1;
-			assert LoopInv(q, x, i, j, q[i] + q[j]);
-		}
-
-		assert LoopInv(q, x, i, j, q[i] + q[j]);
-		sum := q[i] + q[j];
-		assert LoopInv(q, x, i, j, sum);
-	}
-
-	assert 0 <= i < j < |q| && sum == q[i] + q[j]; // from the loop invariant
-	assert sum == x; // from the negation of the loop guard
-	// ==>
-	assert i < j < |q| && q[i] + q[j] == x;
 }
