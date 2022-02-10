@@ -67,6 +67,30 @@ method FrontierIter<T>(tree: BT<T>, io: IO<T>)
 	modifies io
 	ensures io.omega == old(io.omega) + Frontier(tree)
 {
+	// We chose to use a sequence because of the following (in no particular order):
+	// 1. Trying to use an array which grows dynamically was giving us trouble.
+	//    We didn't learn how to use an array as local variable.
+	//    We lack `reads` and `modifies` permissions on the array to actually
+	//    make use of it and we only saw how to do that when the array is passed
+	//    as an argument to a method.
+	//    And we can't do that because the pointer also has to change dynamically
+	//    in order to grow dynamically which then implies it has to be a local variable.
+	// 2. Problems with writing a function to calculate the maximum size
+	//    will be used by the stack:
+	//    1. It will be complex to prove to Dafny that the algorthim never exceeds the
+	//       the array size.
+	//    2. But not only that, an even bigger issue is that doing so will never
+	//       acutally be done in practice because why do so when using an array which
+	//       grows dynamically is efficient and is simpler.
+	//       So doing so is just for the sake of doing so.
+
+	// Why the stack grows towards the beginning rather than the end:
+	// 1. We're using a sequence anyway so this doesn't matter.
+	// 2. It makes an algorithm which is easier to prove it's correctness.
+	// 3. It seems that you had that solution in mind when making this excerise,
+	//    indicated by both the lecture and the `Frontiers` function which
+	//    takes the first item of the sequence.
+
 	var stack := [tree]; // grows towards the beginning of the sequence
 	while stack != []
 		invariant LoopInv(tree, stack, io.omega, old(io.omega))
