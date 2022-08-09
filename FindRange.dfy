@@ -150,55 +150,56 @@ method {:verify true} FindRange(q: seq<int>, key: int) returns (left: nat, right
 	ensures forall i :: left <= i < right ==> q[i] == key
 	ensures forall i :: right <= i < |q| ==> q[i] > key
 {
-	left := BinarySearch(q, key, 0, |q|-1, (n, m) => (n >= m));
-	right := BinarySearch(q, key, left, |q|-1, (n, m) => (n > m));
+	left := BinarySearch(q, key, 0, |q|, (n, m) => (n >= m));
+	right := BinarySearch(q, key, left, |q|, (n, m) => (n > m));
 }
 
 // all the values in the range satisfy `comparer` (comparer(q[i], key) == true)
-predicate RangeSatisfiesComparer(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool)
+predicate RangeSatisfiesComparer(q: seq<int>, key: int, lowerBound: nat, upperBound: nat, comparer: (int, int) -> bool)
 	requires 0 <= lowerBound <= upperBound <= |q|
 {
 	forall i :: lowerBound <= i < upperBound ==> comparer(q[i], key)
 }
 
 // all the values in the range satisfy `!comparer` (comparer(q[i], key) == false)
-predicate RangeSatisfiesComparerNegation(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool)
+predicate RangeSatisfiesComparerNegation(q: seq<int>, key: int, lowerBound: nat, upperBound: nat, comparer: (int, int) -> bool)
 	requires 0 <= lowerBound <= upperBound <= |q|
 {
 	RangeSatisfiesComparer(q, key, lowerBound, upperBound, (n1, n2) => !comparer(n1, n2))
 }
 
-method BinarySearch(q: seq<int>, key: int, lowerBound: int, upperBound: int, comparer: (int, int) -> bool) returns (index: nat)
+method BinarySearch(q: seq<int>, key: int, lowerBound: nat, upperBound: nat, comparer: (int, int) -> bool) returns (index: nat)
 	requires Sorted(q)
-	requires 0 <= lowerBound <= |q|
-	requires lowerBound-1 <= upperBound < |q|
+	requires 0 <= lowerBound <= upperBound <= |q|
 	requires RangeSatisfiesComparerNegation(q, key, 0, lowerBound, comparer)
-	requires RangeSatisfiesComparer(q, key, upperBound + 1, |q|, comparer)
+	requires RangeSatisfiesComparer(q, key, upperBound, |q|, comparer)
 	// comparer is '>' or '>='
 	requires
 		(forall n1, n2 :: comparer(n1, n2) == (n1 >  n2)) ||
 		(forall n1, n2 :: comparer(n1, n2) == (n1 >= n2))
 
-	ensures lowerBound <= index <= upperBound + 1
+	ensures lowerBound <= index <= upperBound
 	ensures RangeSatisfiesComparerNegation(q, key, 0, index, comparer)
 	ensures RangeSatisfiesComparer(q, key, index, |q|, comparer)
 {
-	var low : int := lowerBound;
-	var high : int := upperBound;
-	while (low <= high)
-		invariant lowerBound-1 <= high <= upperBound;
-		invariant lowerBound <= low <= upperBound + 1;
+	var low : nat := lowerBound;
+	var high : nat := upperBound;
+	while (low < high)
+		invariant lowerBound <= low <= high <= upperBound
 		invariant RangeSatisfiesComparerNegation(q, key, 0, low, comparer)
-		invariant RangeSatisfiesComparer(q, key, high + 1, |q|, comparer)
-		decreases high-low
+		invariant RangeSatisfiesComparer(q, key, high, |q|, comparer)
+		decreases high - low
 	{
-		var middle:= (low+high)/2;
-		if (comparer(q[middle], key)) {
-			high := middle-1;
-		} else {
-			low := middle+1;
+		var middle:= low + ((high - low) / 2);
+		if (comparer(q[middle], key))
+		{
+			high := middle;
+		}
+		else
+		{
+			low := middle + 1;
 		}
 	}
 
-	index := high + 1;
+	index := high;
 }
